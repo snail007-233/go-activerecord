@@ -3,9 +3,9 @@
 import  github.com/snail007/go-activerecord/mysql
 
 0.configure 
-var dbCfg = NewDBConfig()
+var dbCfg = mysql.NewDBConfig()
 dbCfg.Password = "admin"
-db, err := NewDB(dbCfg)
+db, err := mysql.NewDB(dbCfg)
 if err != nil {
 		fmt.Printf("ERR:%s", err)
         return
@@ -119,7 +119,7 @@ SetMaxIdleConns:          50,
         fmt.Println(rs.RowsAffected, rs.LastInsertId)
     }
 6.Connect to multilple Database
-    group := NewDBGroup("default")
+    group := mysql.NewDBGroup("default")
     group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
     group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
     group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
