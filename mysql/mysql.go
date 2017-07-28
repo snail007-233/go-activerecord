@@ -10,6 +10,50 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+type DBGroup struct {
+	defaultConfigKey string
+	config           map[string]DBConfig
+	dbGroup          map[string]*DB
+}
+
+func NewDBGroup(defaultConfigName string) (group *DBGroup) {
+	group = &DBGroup{}
+	group.defaultConfigKey = defaultConfigName
+	group.config = map[string]DBConfig{}
+	group.dbGroup = map[string]*DB{}
+	return
+}
+func (g *DBGroup) RegistGroup(cfg map[string]DBConfig) (err error) {
+	g.config = cfg
+	for name, config := range g.config {
+		g.Regist(name, config)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (g *DBGroup) Regist(name string, cfg DBConfig) (err error) {
+	var db DB
+	db, err = NewDB(cfg)
+	if err != nil {
+		return
+	}
+	g.config[name] = cfg
+	g.dbGroup[name] = &db
+	return
+}
+func (g *DBGroup) DB(name ...string) (db *DB) {
+	key := ""
+	if len(name) == 0 {
+		key = g.defaultConfigKey
+	} else {
+		key = name[0]
+	}
+	db, _ = g.dbGroup[key]
+	return
+}
+
 type DB struct {
 	Config   DBConfig
 	ConnPool *sql.DB
@@ -131,6 +175,15 @@ type DBConfig struct {
 	SetMaxOpenConns          int
 }
 
+func NewDBConfigWith(host string, port int, dbName, user, pass string) (cfg DBConfig) {
+	cfg = NewDBConfig()
+	cfg.Host = host
+	cfg.Port = port
+	cfg.Username = user
+	cfg.Password = pass
+	cfg.Database = dbName
+	return
+}
 func NewDBConfig() DBConfig {
 	return DBConfig{
 		Charset:                  "utf8",

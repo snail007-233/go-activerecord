@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -179,5 +180,19 @@ func TestUpdateBatch(t *testing.T) {
 	}
 }
 func Test(t *testing.T) {
-
+	group := NewDBGroup("default")
+	group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+	db := group.DB("www")
+	if db != nil {
+		rs, err := db.Query(db.AR().From("test"))
+		if err != nil {
+			t.Errorf("ERR:%s", err)
+		} else {
+			fmt.Println(rs.Rows())
+		}
+	} else {
+		fmt.Printf("db group config of name %s not found", "www")
+	}
 }
