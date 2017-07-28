@@ -3,6 +3,7 @@
 #Usage
 <pre>
 import  github.com/snail007/go-activerecord/mysql
+
 0.configure 
 var dbCfg = NewDBConfig()
 dbCfg.Password = "admin"
@@ -26,8 +27,6 @@ TablePrefixSqlIdentifier: "",
 Timeout:                  3000,
 SetMaxOpenConns:          500,
 SetMaxIdleConns:          50,
-
-
 
 1.Select
 	rs, err := db.Query(db.AR().
