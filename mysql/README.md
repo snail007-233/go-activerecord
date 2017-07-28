@@ -1,6 +1,4 @@
 # go-activerecord for mysql
-
-#Usage
 <pre>
 import  github.com/snail007/go-activerecord/mysql
 
