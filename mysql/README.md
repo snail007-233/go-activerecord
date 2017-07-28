@@ -120,19 +120,19 @@ SetMaxIdleConns:          50,
     }
 6.Connect to multilple Database
     group := NewDBGroup("default")
-	group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-	group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-	group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
     //group.DB() equal to group.DB("default")
-	db := group.DB("www")
-	if db != nil {
-		rs, err := db.Query(db.AR().From("test"))
-		if err != nil {
-			t.Errorf("ERR:%s", err)
-		} else {
-			fmt.Println(rs.Rows())
-		}
-	} else {
-		fmt.Printf("db group config of name %s not found", "www")
-	}
+    db := group.DB("www")
+    if db != nil {
+        rs, err := db.Query(db.AR().From("test"))
+        if err != nil {
+            t.Errorf("ERR:%s", err)
+        } else {
+            fmt.Println(rs.Rows())
+        }
+    } else {
+        fmt.Printf("db group config of name %s not found", "www")
+    }
 </pre>
