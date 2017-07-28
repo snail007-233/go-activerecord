@@ -117,7 +117,6 @@ func (db *DB) Query(ar *ActiveRecord) (rs *ResultSet, err error) {
 }
 
 type DBConfig struct {
-	Debug                    bool
 	Charset                  string
 	Collate                  string
 	Database                 string
@@ -134,7 +133,6 @@ type DBConfig struct {
 
 func NewDBConfig() DBConfig {
 	return DBConfig{
-		Debug:                    false,
 		Charset:                  "utf8",
 		Collate:                  "utf8_general_ci",
 		Database:                 "test",
@@ -768,6 +766,7 @@ func (rs *ResultSet) Len() int {
 	return len(*rs.rawRows)
 }
 func (rs *ResultSet) MapRows(keyColumn string) (rowsMap map[string]map[string]string) {
+	rowsMap = map[string]map[string]string{}
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
@@ -778,6 +777,7 @@ func (rs *ResultSet) MapRows(keyColumn string) (rowsMap map[string]map[string]st
 	return
 }
 func (rs *ResultSet) Rows() (rows []map[string]string) {
+	rows = []map[string]string{}
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
@@ -788,6 +788,7 @@ func (rs *ResultSet) Rows() (rows []map[string]string) {
 	return
 }
 func (rs *ResultSet) Row() (row map[string]string) {
+	row = map[string]string{}
 	if rs.Len() > 0 {
 		row = map[string]string{}
 		for k, v := range (*rs.rawRows)[0] {
@@ -799,22 +800,14 @@ func (rs *ResultSet) Row() (row map[string]string) {
 func (rs *ResultSet) Values(column string) (values []string) {
 	values = []string{}
 	for _, row := range *rs.rawRows {
-		for k, v := range row {
-			if k == column {
-				values = append(values, string(v.([]byte)))
-			}
-		}
+		values = append(values, string(row[column].([]byte)))
 	}
 	return
 }
-func (rs *ResultSet) MapValues(keyColumn string) (values map[string]string) {
+func (rs *ResultSet) MapValues(keyColumn, valueColumn string) (values map[string]string) {
 	values = map[string]string{}
 	for _, row := range *rs.rawRows {
-		for k, v := range row {
-			if k == keyColumn {
-				values[k] = string(v.([]byte))
-			}
-		}
+		values[string(row[keyColumn].([]byte))] = string(row[valueColumn].([]byte))
 	}
 	return
 }

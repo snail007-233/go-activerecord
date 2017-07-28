@@ -178,3 +178,6 @@ func TestUpdateBatch(t *testing.T) {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
 	}
 }
+func Test(t *testing.T) {
+
+}
