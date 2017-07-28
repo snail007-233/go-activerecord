@@ -109,16 +109,16 @@ SetMaxIdleConns:          50,
     rowsAffected:=rs.RowsAffected
     fmt.printf("rows affected : %d",rowsAffected)
 4.Delete
-        rs, err := db.Exec(db.AR().Delete("test", map[string]interface{}{
-			"pid":   223,
-		}))
-        rowsAffected:=rs.RowsAffected
-        fmt.printf("rows affected : %d",rowsAffected)
+    rs, err := db.Exec(db.AR().Delete("test", map[string]interface{}{
+        "pid":   223,
+    }))
+    rowsAffected:=rs.RowsAffected
+    fmt.printf("rows affected : %d",rowsAffected)
 5.Raw SQL Query
     rs, err := db.Exec(db.AR().Raw("insert into test(id,name) values (?,?)", 555,"6666"))
-	if err != nil {
-		fmt.Printf("ERR:%s", err)
-	} else {
-		fmt.Println(rs.RowsAffected, rs.LastInsertId)
-	}
+    if err != nil {
+        fmt.Printf("ERR:%s", err)
+    } else {
+        fmt.Println(rs.RowsAffected, rs.LastInsertId)
+    }
 </pre>
