@@ -71,6 +71,7 @@ func (db *DB) init(config DBConfig) (err error) {
 	db.ConnPool, err = db.getDB()
 	return
 }
+
 func (db *DB) getDSN() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%dms&charset=%s&collation=%s",
 		url.QueryEscape(db.Config.Username),
@@ -97,6 +98,29 @@ func (db *DB) AR() (ar *ActiveRecord) {
 	ar.Reset()
 	ar.tablePrefix = db.Config.TablePrefix
 	ar.tablePrefixSqlIdentifier = db.Config.TablePrefixSqlIdentifier
+	return
+}
+func (db *DB) Begin(config DBConfig) (tx *sql.Tx, err error) {
+	return db.ConnPool.Begin()
+}
+func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
+	sqlStr := ar.SQL()
+	var stmt *sql.Stmt
+	var result sql.Result
+	rs = new(ResultSet)
+	stmt, err = tx.Prepare(sqlStr)
+	if err != nil {
+		return
+	}
+	result, err = stmt.Exec(ar.values...)
+	if err != nil {
+		return
+	}
+	rs.RowsAffected, err = result.RowsAffected()
+	rs.LastInsertId, err = result.LastInsertId()
+	if err != nil {
+		return
+	}
 	return
 }
 func (db *DB) Exec(ar *ActiveRecord) (rs *ResultSet, err error) {
