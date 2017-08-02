@@ -806,7 +806,7 @@ func (ar *ActiveRecord) getWhere() string {
 
 	for _, v := range ar.arWhere {
 		for _, value := range v[0].(map[string]interface{}) {
-			if isArray(value) && len(value.([]interface{})) == 0 {
+			if isArray(value) && reflect.ValueOf(value).Len() == 0 {
 				hasEmptyIn = true
 				break
 			}
