@@ -152,10 +152,10 @@ func (db *DB) Query(ar *ActiveRecord) (rs *ResultSet, err error) {
 	}
 	var rows *sql.Rows
 	rows, err = stmt.Query(ar.values...)
-	defer rows.Close()
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	cols := []string{}
 	cols, err = rows.Columns()
 	if err != nil {
@@ -677,7 +677,8 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 				_v = append(_v, "?")
 			}
 			_where = append(_where, fmt.Sprintf("%s %s (%s)", key, op, strings.Join(_v, ",")))
-			for _, v := range value.([]interface{}) {
+
+			for _, v := range *ar.interface2Slice(value) {
 				ar.values = append(ar.values, v)
 			}
 		} else if isBool(value) {
@@ -707,6 +708,17 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 		}
 	}
 	return fmt.Sprintf(" %s %s %s ", leftWrap, strings.Join(_where, " AND "), rightWrap)
+}
+func (ar *ActiveRecord) interface2Slice(data interface{}) (arr *[]interface{}) {
+	arr = &[]interface{}{}
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+		for i := 0; i < val.Len(); i++ {
+			e := val.Index(i)
+			*arr = append(*arr, e.Interface())
+		}
+	}
+	return
 }
 func (ar *ActiveRecord) compileSelect() string {
 	selects := ar.arSelect
