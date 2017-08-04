@@ -2,10 +2,13 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -865,6 +868,22 @@ func (rs *ResultSet) MapRows(keyColumn string) (rowsMap map[string]map[string]st
 	}
 	return
 }
+func (rs *ResultSet) MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{}, err error) {
+	structsMap = map[string]interface{}{}
+	for _, row := range *rs.rawRows {
+		newRow := map[string]string{}
+		for k, v := range row {
+			newRow[k] = string(v.([]byte))
+		}
+		var _struct interface{}
+		_struct, err = rs.mapToStruct(newRow, strucT)
+		if err != nil {
+			return nil, err
+		}
+		structsMap[newRow[keyColumn]] = _struct
+	}
+	return
+}
 func (rs *ResultSet) Rows() (rows []map[string]string) {
 	rows = []map[string]string{}
 	for _, row := range *rs.rawRows {
@@ -876,6 +895,22 @@ func (rs *ResultSet) Rows() (rows []map[string]string) {
 	}
 	return
 }
+func (rs *ResultSet) Structs(strucT interface{}) (structs []interface{}, err error) {
+	structs = []interface{}{}
+	for _, row := range *rs.rawRows {
+		newRow := map[string]string{}
+		for k, v := range row {
+			newRow[k] = string(v.([]byte))
+		}
+		var _struct interface{}
+		_struct, err = rs.mapToStruct(newRow, strucT)
+		if err != nil {
+			return nil, err
+		}
+		structs = append(structs, _struct)
+	}
+	return structs, nil
+}
 func (rs *ResultSet) Row() (row map[string]string) {
 	row = map[string]string{}
 	if rs.Len() > 0 {
@@ -885,6 +920,12 @@ func (rs *ResultSet) Row() (row map[string]string) {
 		}
 	}
 	return
+}
+func (rs *ResultSet) Struct(strucT interface{}) (Struct interface{}, err error) {
+	if rs.Len() > 0 {
+		return rs.mapToStruct(rs.Row(), strucT)
+	}
+	return nil, errors.New("rs is empty")
 }
 func (rs *ResultSet) Values(column string) (values []string) {
 	values = []string{}
@@ -906,4 +947,56 @@ func (rs *ResultSet) Value(column string) (value string) {
 		value, _ = row[column]
 	}
 	return
+}
+func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) (struCt interface{}, err error) {
+	rv := reflect.New(reflect.TypeOf(Struct)).Elem()
+	if reflect.TypeOf(Struct).Kind() != reflect.Struct {
+		return nil, errors.New("v must be struct")
+	}
+	fieldType := rv.Type()
+	for i, fieldCount := 0, rv.NumField(); i < fieldCount; i++ {
+		fieldVal := rv.Field(i)
+		if !fieldVal.CanSet() {
+			continue
+		}
+
+		structField := fieldType.Field(i)
+		structTag := structField.Tag
+		name := structTag.Get("column")
+
+		if _, ok := mapData[name]; !ok {
+			continue
+		}
+		switch structField.Type.Kind() {
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint, reflect.Uintptr:
+			if val, err := strconv.ParseUint(mapData[name], 10, 64); err == nil {
+				fieldVal.SetUint(val)
+			}
+		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
+			if val, err := strconv.ParseInt(mapData[name], 10, 64); err == nil {
+				fieldVal.SetInt(val)
+			}
+		case reflect.String:
+			fieldVal.SetString(mapData[name])
+		case reflect.Bool:
+			val := false
+			if mapData[name] == "1" {
+				val = true
+			}
+			fieldVal.SetBool(val)
+		case reflect.Float32, reflect.Float64:
+			if val, err := strconv.ParseFloat(mapData[name], 64); err == nil {
+				fieldVal.SetFloat(val)
+			}
+		case reflect.Struct:
+			if structField.Type.Name() == "Time" {
+				local, _ := time.LoadLocation("Local")
+				val, err := time.ParseInLocation("2006-01-02 15:04:05", mapData[name], local)
+				if err == nil {
+					fieldVal.Set(reflect.ValueOf(val))
+				}
+			}
+		}
+	}
+	return rv.Interface(), err
 }

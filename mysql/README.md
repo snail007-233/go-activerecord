@@ -27,6 +27,10 @@ SetMaxOpenConns:          500,
 SetMaxIdleConns:          50,
 
 1.Select
+    type User{
+        ID int `column:"id"`
+        Name string `column:"name"`
+    }
 	rs, err := db.Query(db.AR().
                 Select("*").
                 From("log").
@@ -39,6 +43,30 @@ SetMaxIdleConns:          50,
 	} else {
 		fmt.Println(rs.Rows())
 	}
+    //struct 
+    _user :=User{}
+    user,err=rs.Struct(_user)
+    if err != nil {
+		fmt.Printf("ERR:%s", err)
+	} else {
+		fmt.Println(user)
+	}
+    //structs
+    _user :=User{}
+    users,err=rs.Structs(_user)
+    if err != nil {
+		fmt.Printf("ERR:%s", err)
+	} else {
+		fmt.Println(users)
+	}
+    //Map structs
+    _user :=User{}
+    usersMap,err=rs.MapStructs("id",_user)
+    if err != nil {
+		fmt.Printf("ERR:%s", err)
+	} else {
+		fmt.Println(usersMap)
+	}
     //db.AR() return a new *mysql.ActiveRecord,you can use it to build you sql.
     //all of db.AR() usage to see <a href="https://github.com/snail007/go-activerecord/blob/master/mysql/mysql_test.go">mysql_test.go</a>
 
@@ -47,10 +75,16 @@ SetMaxIdleConns:          50,
         how many rows of select
     ResultSet.MapRows(keyColumn string) (rowsMap map[string]map[string]string)
         get a map which key is each value of row[keyColumn]
+    ResultSet.MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{}, err error)
+        get a map which key is row[keyColumn],value is strucT
     ResultSet.Rows() (rows []map[string]string)
         get rows of select
+    ResultSet.Structs(strucT interface{}) (structs []interface{}, err error)
+        get array of strucT of select
     ResultSet.Row() (row map[string]string)
         get first of rows
+    ResultSet.Struct(strucT interface{}) (Struct interface{}, err error)
+        get first strucT of select 
     ResultSet.Values(column string) (values []string)
         get an array contains each row[column] 
     ResultSet.MapValues(keyColumn, valueColumn string) (values map[string]string)
