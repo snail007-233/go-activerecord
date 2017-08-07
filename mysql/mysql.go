@@ -659,7 +659,7 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 		_key := strings.SplitN(k, " ", 2)
 		op := ""
 		if len(_key) == 2 {
-			op = _key[0]
+			op = _key[1]
 		}
 		keys := strings.Split(_key[0], ".")
 		if len(keys) == 2 {
