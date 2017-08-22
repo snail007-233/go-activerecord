@@ -195,4 +195,10 @@ import  github.com/snail007/go-activerecord/mysql
     } else {
         fmt.Println(rs.RowsAffected, rs.LastInsertId)
     }
+    //notice:
+    if  dbCfg.TablePrefix="user_" 
+        dbCfg.TablePrefixSqlIdentifier="{__PREFIX__}" 
+    then
+        db.AR().Raw("insert into {__PREFIX__}test(id,name) values (?,?)
+    when execute sql,{__PREFIX__} will be repaced with "user_"
 </pre>
