@@ -26,8 +26,8 @@ import  github.com/snail007/go-activerecord/mysql
 1.Connect to multilple Database
     group := mysql.NewDBGroup("default")
     group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-    group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-    group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "blog_db", "root", "admin"))
+    group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "www_db", "root", "admin"))
     //group.DB() equal to group.DB("default")
     db := group.DB("www")
     if db != nil {
