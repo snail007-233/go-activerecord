@@ -20,7 +20,7 @@ import  github.com/snail007/go-activerecord/mysql
     Password:                 "",
     TablePrefix:              "",
     TablePrefixSqlIdentifier: "",
-    Timeout:                  3000,
+    Timeout:                  3000, //ms
     SetMaxOpenConns:          500,
     SetMaxIdleConns:          50,
 1.Connect to multilple Database
