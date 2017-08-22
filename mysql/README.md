@@ -89,7 +89,8 @@ import  github.com/snail007/go-activerecord/mysql
         how many rows of select
     ResultSet.MapRows(keyColumn string) (rowsMap map[string]map[string]string)
         get a map which key is each value of row[keyColumn]
-    ResultSet.MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{}, err error)
+    ResultSet.MapStructs(keyColumn string, strucT interface{}) (structsMap map[string]interface{},
+     err error)
         get a map which key is row[keyColumn],value is strucT
     ResultSet.Rows() (rows []map[string]string)
         get rows of select
