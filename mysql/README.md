@@ -200,5 +200,5 @@ import  github.com/snail007/go-activerecord/mysql
         dbCfg.TablePrefixSqlIdentifier="{__PREFIX__}" 
     then
         db.AR().Raw("insert into {__PREFIX__}test(id,name) values (?,?)
-    when execute sql,{__PREFIX__} will be repaced with "user_"
+    when execute sql,{__PREFIX__} will be replaced with "user_"
 </pre>
