@@ -2,7 +2,7 @@
 <pre>
 import  github.com/snail007/go-activerecord/mysql
 
-0.configure 
+0.Configure 
     var dbCfg = mysql.NewDBConfig()
     dbCfg.Password = "admin"
     db, err := mysql.NewDB(dbCfg)
