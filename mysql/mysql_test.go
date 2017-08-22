@@ -324,3 +324,17 @@ func TestMapStructs(t *testing.T) {
 		}
 	}
 }
+func TestUpdateBatch0(t *testing.T) {
+	ar := ar().UpdateBatch("test", []map[string]interface{}{
+		map[string]interface{}{
+			"id":      "id1",
+			"name":    "test1",
+			"score +": 1,
+		}, map[string]interface{}{
+			"id":      "id2",
+			"name":    "test2",
+			"score +": 1,
+		},
+	}, "id")
+	fmt.Println(ar.SQL(), ar.Values())
+}

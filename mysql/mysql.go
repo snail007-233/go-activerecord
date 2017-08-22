@@ -535,14 +535,23 @@ func (ar *ActiveRecord) compileUpdateBatch() string {
 	}
 	str := ""
 	for _, column := range columns {
-		str += fmt.Sprintf("%s = CASE \n", ar.protectIdentifier(column))
+		_column := column
+		realColumnArr := strings.Split(column, " ")
+		if len(realColumnArr) == 2 {
+			_column = realColumnArr[0]
+		}
+		str += fmt.Sprintf("%s = CASE \n", ar.protectIdentifier(_column))
 		for _, row := range values {
-			str += fmt.Sprintf("WHEN %s = ? THEN ? \n", ar.protectIdentifier(index))
+			if len(realColumnArr) == 2 {
+				str += fmt.Sprintf("WHEN %s = ? THEN %s %s ? \n", ar.protectIdentifier(index), ar.protectIdentifier(_column), realColumnArr[1])
+			} else {
+				str += fmt.Sprintf("WHEN %s = ? THEN ? \n", ar.protectIdentifier(index))
+			}
 			idv, _ := row[index]
 			colv, _ := row[column]
 			ar.values = append(ar.values, idv, colv)
 		}
-		str += fmt.Sprintf("ELSE %s END,", ar.protectIdentifier(column))
+		str += fmt.Sprintf("ELSE %s END,", ar.protectIdentifier(_column))
 	}
 	return strings.TrimRight(str, " ,")
 }
