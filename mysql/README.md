@@ -3,30 +3,46 @@
 import  github.com/snail007/go-activerecord/mysql
 
 0.configure 
-var dbCfg = mysql.NewDBConfig()
-dbCfg.Password = "admin"
-db, err := mysql.NewDB(dbCfg)
-if err != nil {
-		fmt.Printf("ERR:%s", err)
-        return
-}
+    var dbCfg = mysql.NewDBConfig()
+    dbCfg.Password = "admin"
+    db, err := mysql.NewDB(dbCfg)
+    if err != nil {
+            fmt.Printf("ERR:%s", err)
+            return
+    }
 
-Default config is below:
+    Default config is below:
 
-Charset:                  "utf8",
-Collate:                  "utf8_general_ci",
-Database:                 "test",
-Host:                     "127.0.0.1",
-Port:                     3306,
-Username:                 "root",
-Password:                 "",
-TablePrefix:              "",
-TablePrefixSqlIdentifier: "",
-Timeout:                  3000,
-SetMaxOpenConns:          500,
-SetMaxIdleConns:          50,
-
-1.Select
+    Charset:                  "utf8",
+    Collate:                  "utf8_general_ci",
+    Database:                 "test",
+    Host:                     "127.0.0.1",
+    Port:                     3306,
+    Username:                 "root",
+    Password:                 "",
+    TablePrefix:              "",
+    TablePrefixSqlIdentifier: "",
+    Timeout:                  3000,
+    SetMaxOpenConns:          500,
+    SetMaxIdleConns:          50,
+1.Connect to multilple Database
+    group := mysql.NewDBGroup("default")
+    group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+    //group.DB() equal to group.DB("default")
+    db := group.DB("www")
+    if db != nil {
+        rs, err := db.Query(db.AR().From("test"))
+        if err != nil {
+            t.Errorf("ERR:%s", err)
+        } else {
+            fmt.Println(rs.Rows())
+        }
+    } else {
+        fmt.Printf("db group config of name %s not found", "www")
+    }
+2.Select
     type User{
         ID int `column:"id"`
         Name string `column:"name"`
@@ -97,7 +113,7 @@ SetMaxIdleConns:          50,
         if sql type is write , this is the count of rows affected
 
 	
-2.Insert & Insert Batch
+3.Insert & Insert Batch
     Insert:
         rs, err := db.Exec(db.AR().Insert("test", map[string]interface{}{
 			"id":   "id11122",
@@ -118,7 +134,7 @@ SetMaxIdleConns:          50,
     rowsAffected:=rs.RowsAffected
     fmt.printf("last insert id : %d,rows affected : %d",lastInsertId,rowsAffected)
 	
-3.Update & Update Batch
+4.Update & Update Batch
     Update:
         rs, err := db.Exec(db.AR().Update("test", map[string]interface{}{
 			"id":   "id11122",
@@ -168,34 +184,17 @@ SetMaxIdleConns:          50,
     WHEN `id` = ? THEN `score` + ? 
     ELSE `score` END 
     WHERE id IN (?,?)
-4.Delete
+5.Delete
     rs, err := db.Exec(db.AR().Delete("test", map[string]interface{}{
         "pid":   223,
     }))
     rowsAffected:=rs.RowsAffected
     fmt.printf("rows affected : %d",rowsAffected)
-5.Raw SQL Query
+6.Raw SQL Query
     rs, err := db.Exec(db.AR().Raw("insert into test(id,name) values (?,?)", 555,"6666"))
     if err != nil {
         fmt.Printf("ERR:%s", err)
     } else {
         fmt.Println(rs.RowsAffected, rs.LastInsertId)
-    }
-6.Connect to multilple Database
-    group := mysql.NewDBGroup("default")
-    group.Regist("default", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-    group.Regist("blog", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-    group.Regist("www", NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
-    //group.DB() equal to group.DB("default")
-    db := group.DB("www")
-    if db != nil {
-        rs, err := db.Query(db.AR().From("test"))
-        if err != nil {
-            t.Errorf("ERR:%s", err)
-        } else {
-            fmt.Println(rs.Rows())
-        }
-    } else {
-        fmt.Printf("db group config of name %s not found", "www")
     }
 </pre>
