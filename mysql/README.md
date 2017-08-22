@@ -10,9 +10,7 @@ import  github.com/snail007/go-activerecord/mysql
             fmt.Printf("ERR:%s", err)
             return
     }
-
-    Default config is below:
-
+    dbCfg.xxx,"xxxx" default is below:
     Charset:                  "utf8",
     Collate:                  "utf8_general_ci",
     Database:                 "test",
