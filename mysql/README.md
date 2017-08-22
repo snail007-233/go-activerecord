@@ -127,18 +127,47 @@ SetMaxIdleConns:          50,
 			"pid":   223,
 		}))
     Update Batch:
+    //1.common update
     rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
 		map[string]interface{}{
-			"id":   "id11122",
+			"id":   "id1",
 			"name": "333",
 		},
 		map[string]interface{}{
-			"id":   "id11122",
+			"id":   "id2",
 			"name": "4444",
 		},
 	}, "id"))
     rowsAffected:=rs.RowsAffected
     fmt.printf("rows affected : %d",rowsAffected)
+    //equal sql below :
+    UPDATE  `test` 
+    SET `name` = CASE 
+    WHEN `id` = ? THEN  ? 
+    WHEN `id` = ? THEN  ? 
+    ELSE `score` END 
+    WHERE id IN (?,?)
+
+    //2.column operate
+    rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
+		map[string]interface{}{
+			"id":   "id11",
+			"score +": 10,
+		},
+		map[string]interface{}{
+			"id":   "id22",
+			"score +": 20,
+		},
+	}, "id"))
+    rowsAffected:=rs.RowsAffected
+    fmt.printf("rows affected : %d",rowsAffected)
+    //equal sql below :
+    UPDATE  `test` 
+    SET `score` = CASE 
+    WHEN `id` = ? THEN `score` + ? 
+    WHEN `id` = ? THEN `score` + ? 
+    ELSE `score` END 
+    WHERE id IN (?,?)
 4.Delete
     rs, err := db.Exec(db.AR().Delete("test", map[string]interface{}{
         "pid":   223,
