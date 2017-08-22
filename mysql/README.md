@@ -45,7 +45,7 @@ import  github.com/snail007/go-activerecord/mysql
         ID int `column:"id"`
         Name string `column:"name"`
     }
-	rs, err := db.Query(db.AR().
+    rs, err := db.Query(db.AR().
                 Select("*").
                 From("log").
                 Where(map[string]interface{}{
@@ -59,7 +59,7 @@ import  github.com/snail007/go-activerecord/mysql
 	}
     //struct 
     _user :=User{}
-    user,err=rs.Struct(_user)
+    user,err:=rs.Struct(_user)
     if err != nil {
 		fmt.Printf("ERR:%s", err)
 	} else {
@@ -67,7 +67,7 @@ import  github.com/snail007/go-activerecord/mysql
 	}
     //structs
     _user :=User{}
-    users,err=rs.Structs(_user)
+    users,err:=rs.Structs(_user)
     if err != nil {
 		fmt.Printf("ERR:%s", err)
 	} else {
