@@ -141,8 +141,9 @@ import  github.com/snail007/go-activerecord/mysql
 		}),map[string]interface{}{
 			"pid":   223,
 		}))
+
     Update Batch:
-    //1.common update
+    1.common update
     rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
 		map[string]interface{}{
 			"id":   "id1",
@@ -152,7 +153,7 @@ import  github.com/snail007/go-activerecord/mysql
 			"id":   "id2",
 			"name": "4444",
 		},
-	}, "id"))
+	}, []string{"id"}))
     rowsAffected:=rs.RowsAffected
     fmt.printf("rows affected : %d",rowsAffected)
     //equal sql below :
@@ -163,7 +164,7 @@ import  github.com/snail007/go-activerecord/mysql
     ELSE `score` END 
     WHERE id IN (?,?)
 
-    //2.column operate
+    2.column operate
     rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
 		map[string]interface{}{
 			"id":   "id11",
@@ -173,7 +174,7 @@ import  github.com/snail007/go-activerecord/mysql
 			"id":   "id22",
 			"score +": 20,
 		},
-	}, "id"))
+	}, , []string{"id"}))
     rowsAffected:=rs.RowsAffected
     fmt.printf("rows affected : %d",rowsAffected)
     //equal sql below :
@@ -183,6 +184,33 @@ import  github.com/snail007/go-activerecord/mysql
     WHEN `id` = ? THEN `score` + ? 
     ELSE `score` END 
     WHERE id IN (?,?)
+
+    3.where on more column
+    rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
+		map[string]interface{}{
+			"id":      "id1",
+			"gid":     22,
+			"name":    "test1",
+			"score +": 1,
+		}, map[string]interface{}{
+			"id":      "id2",
+			"gid":     33,
+			"name":    "test2",
+			"score +": 1,
+		},
+	}, []string{"id", "gid"})
+    rowsAffected:=rs.RowsAffected
+    fmt.printf("rows affected : %d",rowsAffected)
+    //equal sql below :
+    UPDATE  `test` 
+    SET `name` = CASE 
+    WHEN `id` = ? AND `gid` = ? THEN ? 
+    WHEN `id` = ? AND `gid` = ? THEN ? 
+    ELSE `name` END,`score` = CASE 
+    WHEN `id` = ? AND `gid` = ? THEN `score` + ? 
+    WHEN `id` = ? AND `gid` = ? THEN `score` + ? 
+    ELSE `score` END 
+    WHERE id IN (?,?)   AND gid IN (?,?)
 5.Delete
     rs, err := db.Exec(db.AR().Delete("test", map[string]interface{}{
         "pid":   223,

@@ -386,16 +386,18 @@ func (ar *ActiveRecord) Update(table string, data, where map[string]interface{})
 	}
 	return ar
 }
-func (ar *ActiveRecord) UpdateBatch(table string, values []map[string]interface{}, whereColumn string) *ActiveRecord {
+func (ar *ActiveRecord) UpdateBatch(table string, values []map[string]interface{}, whereColumn []string) *ActiveRecord {
 	ar.From(table)
 	ar.sqlType = "updateBatch"
 	ar.arUpdateBatch = []interface{}{values, whereColumn}
 	if len(values) > 0 {
-		ids := []interface{}{}
-		for _, val := range values {
-			ids = append(ids, val[whereColumn])
+		for _, whereCol := range whereColumn {
+			ids := []interface{}{}
+			for _, val := range values {
+				ids = append(ids, val[whereCol])
+			}
+			ar.Where(map[string]interface{}{whereCol: ids})
 		}
-		ar.Where(map[string]interface{}{whereColumn: ids})
 	}
 	return ar
 }
@@ -524,11 +526,18 @@ func (ar *ActiveRecord) getSelectSQL() string {
 }
 func (ar *ActiveRecord) compileUpdateBatch() string {
 	_values, _index := ar.arUpdateBatch[0], ar.arUpdateBatch[1]
-	index := _index.(string)
+	index := _index.([]string)
 	values := _values.([]map[string]interface{})
 	columns := []string{}
 	for k := range values[0] {
-		if k == index {
+		_continue := false
+		for _, v1 := range index {
+			if k == v1 {
+				_continue = true
+				break
+			}
+		}
+		if _continue {
 			continue
 		}
 		columns = append(columns, k)
@@ -542,14 +551,18 @@ func (ar *ActiveRecord) compileUpdateBatch() string {
 		}
 		str += fmt.Sprintf("%s = CASE \n", ar.protectIdentifier(_column))
 		for _, row := range values {
-			if len(realColumnArr) == 2 {
-				str += fmt.Sprintf("WHEN %s = ? THEN %s %s ? \n", ar.protectIdentifier(index), ar.protectIdentifier(_column), realColumnArr[1])
-			} else {
-				str += fmt.Sprintf("WHEN %s = ? THEN ? \n", ar.protectIdentifier(index))
+			_when := []string{}
+			for _, col := range index {
+				_when = append(_when, fmt.Sprintf("%s = ?", ar.protectIdentifier(col)))
+				ar.values = append(ar.values, row[col])
 			}
-			idv, _ := row[index]
-			colv, _ := row[column]
-			ar.values = append(ar.values, idv, colv)
+			_whenStr := strings.Join(_when, " AND ")
+			if len(realColumnArr) == 2 {
+				str += fmt.Sprintf("WHEN %s THEN %s %s ? \n", _whenStr, ar.protectIdentifier(_column), realColumnArr[1])
+			} else {
+				str += fmt.Sprintf("WHEN %s THEN ? \n", _whenStr)
+			}
+			ar.values = append(ar.values, row[column])
 		}
 		str += fmt.Sprintf("ELSE %s END,", ar.protectIdentifier(_column))
 	}
@@ -676,6 +689,7 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 		} else {
 			k = ar.protectIdentifier(keys[0])
 		}
+
 		if isArray(value) {
 			if op != "" {
 				op += " IN"
@@ -684,12 +698,12 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 			}
 			op = strings.ToUpper(op)
 			l := reflect.ValueOf(value).Len()
+
 			_v := []string{}
 			for i := 0; i < l; i++ {
 				_v = append(_v, "?")
 			}
 			_where = append(_where, fmt.Sprintf("%s %s (%s)", key, op, strings.Join(_v, ",")))
-
 			for _, v := range *ar.interface2Slice(value) {
 				ar.values = append(ar.values, v)
 			}
@@ -825,7 +839,7 @@ func (ar *ActiveRecord) getLimit() string {
 	return limit
 }
 func (ar *ActiveRecord) getWhere() string {
-	where := ""
+	where := []string{}
 	hasEmptyIn := false
 
 	for _, v := range ar.arWhere {
@@ -838,16 +852,16 @@ func (ar *ActiveRecord) getWhere() string {
 		if hasEmptyIn {
 			break
 		}
-		where = ar.compileWhere(v[0].(map[string]interface{}), v[1].(string), v[2].(string), v[3].(int))
+		where = append(where, ar.compileWhere(v[0].(map[string]interface{}), v[1].(string), v[2].(string), v[3].(int)))
 	}
 	if hasEmptyIn {
 		return "WHERE 0"
 	}
-	where = strings.TrimSpace(where)
-	if where != "" {
-		where = fmt.Sprintf("\nWHERE %s", where)
+	allWhere := strings.TrimSpace(strings.Join(where, ""))
+	if allWhere != "" {
+		allWhere = fmt.Sprintf("\nWHERE %s", allWhere)
 	}
-	return where
+	return allWhere
 }
 
 type ResultSet struct {

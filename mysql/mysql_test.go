@@ -174,7 +174,7 @@ func TestUpdateBatch(t *testing.T) {
 			"name": "admin",
 			"gid":  33,
 		},
-	}, "gid").SQL())
+	}, []string{"gid"}).SQL())
 	//fmt.Println(_ar.Values())
 	if want != got {
 		t.Errorf("\n==> Except : \n%s\n==> Got : \n%s", want, got)
@@ -328,13 +328,15 @@ func TestUpdateBatch0(t *testing.T) {
 	ar := ar().UpdateBatch("test", []map[string]interface{}{
 		map[string]interface{}{
 			"id":      "id1",
+			"gid":     22,
 			"name":    "test1",
 			"score +": 1,
 		}, map[string]interface{}{
 			"id":      "id2",
+			"gid":     33,
 			"name":    "test2",
 			"score +": 1,
 		},
-	}, "id")
+	}, []string{"id", "gid"})
 	fmt.Println(ar.SQL(), ar.Values())
 }
