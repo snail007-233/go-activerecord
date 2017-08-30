@@ -332,8 +332,16 @@ func (ar *ActiveRecord) OrderBy(column, type_ string) *ActiveRecord {
 	return ar
 }
 
-func (ar *ActiveRecord) Limit(offset, count int) *ActiveRecord {
-	ar.arLimit = fmt.Sprintf("%d,%d", offset, count)
+//Limit Limit(offset,count) or Limit(count)
+func (ar *ActiveRecord) Limit(limit ...int) *ActiveRecord {
+	if len(limit) == 1 {
+		ar.arLimit = fmt.Sprintf("%d", limit[0])
+
+	} else if len(limit) == 2 {
+		ar.arLimit = fmt.Sprintf("%d,%d", limit[0], limit[1])
+	} else {
+		ar.arLimit = ""
+	}
 	return ar
 }
 
@@ -635,11 +643,22 @@ func (ar *ActiveRecord) compileSet() string {
 	set := []string{}
 	for key, _value := range ar.arSet {
 		value, wrap := _value[0], _value[1]
+		_column := key
+		op := ""
+		realColumnArr := strings.Split(key, " ")
+		if len(realColumnArr) == 2 {
+			_column = realColumnArr[0]
+			op = realColumnArr[1]
+		}
 		if wrap.(bool) {
-			set = append(set, fmt.Sprintf("%s = ?", ar.protectIdentifier(key)))
+			if op != "" {
+				set = append(set, fmt.Sprintf("%s = %s %s ?", ar.protectIdentifier(_column), ar.protectIdentifier(_column), op))
+			} else {
+				set = append(set, fmt.Sprintf("%s = ?", ar.protectIdentifier(_column)))
+			}
 			ar.values = append(ar.values, value)
 		} else {
-			set = append(set, fmt.Sprintf("%s = %s", ar.protectIdentifier(key), value))
+			set = append(set, fmt.Sprintf("%s = %s", ar.protectIdentifier(_column), value))
 		}
 	}
 	return strings.Join(set, ",")

@@ -135,15 +135,33 @@ import  github.com/snail007/go-activerecord/mysql
 	
 4.Update & Update Batch
     Update:
+    1.common Update(table,data,where)
         rs, err := db.Exec(db.AR().Update("test", map[string]interface{}{
 			"id":   "id11122",
 			"name": "333",
 		}),map[string]interface{}{
 			"pid":   223,
 		}))
+    //equal sql below :
+    UPDATE  `test` 
+    SET `id` = ? , `name` =  ?
+    WHERE `pid` = ?
+
+    2.column operate
+    Update:
+        rs, err := db.Exec(db.AR().Update("test", map[string]interface{}{
+			"id":   "id11122",
+			"score +": "333",
+		}),map[string]interface{}{
+			"pid":   223,
+		}))
+    //equal sql below :
+    UPDATE  `test` 
+    SET `id` = ? , `score` = `score` + ?
+    WHERE `pid` = ?
 
     Update Batch:
-    1.common update
+    1.common update UpdateBatch(table,data,DataWhereColumns)
     rs, err := db.Exec(db.AR().UpdateBatch("test", []map[string]interface{}{
 		map[string]interface{}{
 			"id":   "id1",
