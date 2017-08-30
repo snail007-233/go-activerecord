@@ -459,6 +459,10 @@ func (ar *ActiveRecord) getUpdateSQL() string {
 	SQL = append(SQL, "\nSET")
 	SQL = append(SQL, ar.compileSet())
 	SQL = append(SQL, ar.getWhere())
+	orderBy := strings.TrimSpace(ar.compileOrderBy())
+	if orderBy != "" {
+		SQL = append(SQL, fmt.Sprintf("\nORDER BY %s", orderBy))
+	}
 	SQL = append(SQL, ar.getLimit())
 	return strings.Join(SQL, " ")
 }
@@ -499,6 +503,11 @@ func (ar *ActiveRecord) getDeleteSQL() string {
 	SQL := []string{"DELETE FROM "}
 	SQL = append(SQL, ar.getFrom())
 	SQL = append(SQL, ar.getWhere())
+	orderBy := strings.TrimSpace(ar.compileOrderBy())
+	if orderBy != "" {
+		SQL = append(SQL, fmt.Sprintf("\nORDER BY %s", orderBy))
+	}
+	SQL = append(SQL, ar.getLimit())
 	return strings.Join(SQL, " ")
 }
 func (ar *ActiveRecord) getSelectSQL() string {
