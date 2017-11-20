@@ -731,7 +731,7 @@ func (ar *ActiveRecord) compileWhere(where0 interface{}, leftWrap, rightWrap str
 			for i := 0; i < l; i++ {
 				_v = append(_v, "?")
 			}
-			_where = append(_where, fmt.Sprintf("%s %s (%s)", key, op, strings.Join(_v, ",")))
+			_where = append(_where, fmt.Sprintf("%s %s (%s)", k, op, strings.Join(_v, ",")))
 			for _, v := range *ar.interface2Slice(value) {
 				ar.values = append(ar.values, v)
 			}
