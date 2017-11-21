@@ -248,4 +248,38 @@ import  github.com/snail007/go-activerecord/mysql
     then
         db.AR().Raw("insert into {__PREFIX__}test(id,name) values (?,?)
     when execute sql,{__PREFIX__} will be replaced with "user_"
+7.Cache Query
+    MyCache is an example to set or get cache data . 
+
+    var (
+        cacheData = map[string][]byte{}
+    )
+
+    type MyCache struct {
+    }
+
+    func (c *MyCache) Set(key string, data []byte, expire uint) (err error) {
+        cacheData[key] = data
+        log.Println("set cache")
+        return
+    }
+    func (c *MyCache) Get(key string) (data []byte, err error) {
+        if v, ok := cacheData[key]; ok {
+            log.Println("form cache")
+            return v, nil
+        }
+        return nil, errors.New("key not found or expired")
+    }
+    func main() {
+        g := mysql.NewDBGroupCache("default", &MyCache{})
+        g.Regist("default", mysql.NewDBConfigWith("127.0.0.1", 3306, "test", "root", "admin"))
+        fmt.Println(g.DB().Query(g.DB().AR().Cache("testkey", 30).From("test")))
+        rs, _ := g.DB().Query(g.DB().AR().Cache("testkey", 30).From("test"))
+        fmt.Println(rs.Row())
+    }
+    output like:
+    2017/11/21 18:12:01 set cache
+    &{0xc42000d340 0 0} <nil>
+    2017/11/21 18:12:01 form cache
+    map[pid:1 id:a1 name:a1111 gid:11]
 </pre>

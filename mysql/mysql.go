@@ -1,7 +1,9 @@
 package mysql
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"net/url"
@@ -17,8 +19,17 @@ type DBGroup struct {
 	defaultConfigKey string
 	config           map[string]DBConfig
 	dbGroup          map[string]*DB
+	cache            Cache
 }
 
+func NewDBGroupCache(defaultConfigName string, cache Cache) (group *DBGroup) {
+	group = &DBGroup{}
+	group.defaultConfigKey = defaultConfigName
+	group.config = map[string]DBConfig{}
+	group.dbGroup = map[string]*DB{}
+	group.cache = cache
+	return
+}
 func NewDBGroup(defaultConfigName string) (group *DBGroup) {
 	group = &DBGroup{}
 	group.defaultConfigKey = defaultConfigName
@@ -29,6 +40,9 @@ func NewDBGroup(defaultConfigName string) (group *DBGroup) {
 func (g *DBGroup) RegistGroup(cfg map[string]DBConfig) (err error) {
 	g.config = cfg
 	for name, config := range g.config {
+		if config.Cache == nil {
+			config.Cache = g.cache
+		}
 		g.Regist(name, config)
 		if err != nil {
 			return
@@ -38,6 +52,9 @@ func (g *DBGroup) RegistGroup(cfg map[string]DBConfig) (err error) {
 }
 func (g *DBGroup) Regist(name string, cfg DBConfig) (err error) {
 	var db DB
+	if cfg.Cache == nil {
+		cfg.Cache = g.cache
+	}
 	db, err = NewDB(cfg)
 	if err != nil {
 		return
@@ -147,40 +164,66 @@ func (db *DB) Exec(ar *ActiveRecord) (rs *ResultSet, err error) {
 	return
 }
 func (db *DB) Query(ar *ActiveRecord) (rs *ResultSet, err error) {
-	sqlStr := ar.SQL()
-	var stmt *sql.Stmt
-	stmt, err = db.ConnPool.Prepare(sqlStr)
-	if err != nil {
-		return
+	var results []map[string][]byte
+	if ar.cacheKey != "" {
+		var data []byte
+		data, err = db.Config.Cache.Get(ar.cacheKey)
+		if err == nil {
+			d := gob.NewDecoder(bytes.NewReader(data))
+			err = d.Decode(&results)
+			if err != nil {
+				return
+			}
+		}
 	}
-	var rows *sql.Rows
-	rows, err = stmt.Query(ar.values...)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	cols := []string{}
-	cols, err = rows.Columns()
-	if err != nil {
-		return
-	}
-	vals := make([][]byte, len(cols))
-	scans := make([]interface{}, len(cols))
-	for i := range vals {
-		scans[i] = &vals[i]
-	}
-	results := []map[string]interface{}{}
-	for rows.Next() {
-		err = rows.Scan(scans...)
+	if results == nil || len(results) == 0 {
+		sqlStr := ar.SQL()
+		var stmt *sql.Stmt
+		stmt, err = db.ConnPool.Prepare(sqlStr)
 		if err != nil {
 			return
 		}
-		row := make(map[string]interface{})
-		for k, v := range vals {
-			key := cols[k]
-			row[key] = v
+		var rows *sql.Rows
+		rows, err = stmt.Query(ar.values...)
+		if err != nil {
+			return
 		}
-		results = append(results, row)
+		defer rows.Close()
+		cols := []string{}
+		cols, err = rows.Columns()
+		if err != nil {
+			return
+		}
+		vals := make([][]byte, len(cols))
+		scans := make([]interface{}, len(cols))
+		for i := range vals {
+			scans[i] = &vals[i]
+		}
+		results = []map[string][]byte{}
+		for rows.Next() {
+			err = rows.Scan(scans...)
+			if err != nil {
+				return
+			}
+			row := make(map[string][]byte)
+			for k, v := range vals {
+				key := cols[k]
+				row[key] = v
+			}
+			results = append(results, row)
+		}
+		if ar.cacheKey != "" {
+			b := new(bytes.Buffer)
+			e := gob.NewEncoder(b)
+			err = e.Encode(results)
+			if err != nil {
+				return
+			}
+			err = db.Config.Cache.Set(ar.cacheKey, b.Bytes(), ar.cacheSeconds)
+			if err != nil {
+				return
+			}
+		}
 	}
 	rs = new(ResultSet)
 	rs.Init(&results)
@@ -200,6 +243,7 @@ type DBConfig struct {
 	Timeout                  int
 	SetMaxIdleConns          int
 	SetMaxOpenConns          int
+	Cache                    Cache
 }
 
 func NewDBConfigWith(host string, port int, dbName, user, pass string) (cfg DBConfig) {
@@ -247,8 +291,15 @@ type ActiveRecord struct {
 	currentSQL               string
 	tablePrefix              string
 	tablePrefixSqlIdentifier string
+	cacheKey                 string
+	cacheSeconds             uint
 }
 
+func (ar *ActiveRecord) Cache(key string, seconds uint) *ActiveRecord {
+	ar.cacheKey = key
+	ar.cacheSeconds = seconds
+	return ar
+}
 func (ar *ActiveRecord) getValues() []interface{} {
 	return ar.values
 }
@@ -269,6 +320,8 @@ func (ar *ActiveRecord) Reset() {
 	ar.values = []interface{}{}
 	ar.sqlType = "select"
 	ar.currentSQL = ""
+	ar.cacheKey = ""
+	ar.cacheSeconds = 0
 }
 
 func (ar *ActiveRecord) Select(columns string) *ActiveRecord {
@@ -893,16 +946,16 @@ func (ar *ActiveRecord) getWhere() string {
 }
 
 type ResultSet struct {
-	rawRows      *[]map[string]interface{}
+	rawRows      *[]map[string][]byte
 	LastInsertId int64
 	RowsAffected int64
 }
 
-func (rs *ResultSet) Init(rawRows *[]map[string]interface{}) {
+func (rs *ResultSet) Init(rawRows *[]map[string][]byte) {
 	if rawRows != nil {
 		rs.rawRows = rawRows
 	} else {
-		rs.rawRows = &([]map[string]interface{}{})
+		rs.rawRows = &([]map[string][]byte{})
 	}
 }
 func (rs *ResultSet) Len() int {
@@ -913,7 +966,7 @@ func (rs *ResultSet) MapRows(keyColumn string) (rowsMap map[string]map[string]st
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
-			newRow[k] = string(v.([]byte))
+			newRow[k] = string(v)
 		}
 		rowsMap[newRow[keyColumn]] = newRow
 	}
@@ -924,7 +977,7 @@ func (rs *ResultSet) MapStructs(keyColumn string, strucT interface{}) (structsMa
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
-			newRow[k] = string(v.([]byte))
+			newRow[k] = string(v)
 		}
 		var _struct interface{}
 		_struct, err = rs.mapToStruct(newRow, strucT)
@@ -940,7 +993,7 @@ func (rs *ResultSet) Rows() (rows []map[string]string) {
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
-			newRow[k] = string(v.([]byte))
+			newRow[k] = string(v)
 		}
 		rows = append(rows, newRow)
 	}
@@ -951,7 +1004,7 @@ func (rs *ResultSet) Structs(strucT interface{}) (structs []interface{}, err err
 	for _, row := range *rs.rawRows {
 		newRow := map[string]string{}
 		for k, v := range row {
-			newRow[k] = string(v.([]byte))
+			newRow[k] = string(v)
 		}
 		var _struct interface{}
 		_struct, err = rs.mapToStruct(newRow, strucT)
@@ -967,7 +1020,7 @@ func (rs *ResultSet) Row() (row map[string]string) {
 	if rs.Len() > 0 {
 		row = map[string]string{}
 		for k, v := range (*rs.rawRows)[0] {
-			row[k] = string(v.([]byte))
+			row[k] = string(v)
 		}
 	}
 	return
@@ -981,14 +1034,14 @@ func (rs *ResultSet) Struct(strucT interface{}) (Struct interface{}, err error) 
 func (rs *ResultSet) Values(column string) (values []string) {
 	values = []string{}
 	for _, row := range *rs.rawRows {
-		values = append(values, string(row[column].([]byte)))
+		values = append(values, string(row[column]))
 	}
 	return
 }
 func (rs *ResultSet) MapValues(keyColumn, valueColumn string) (values map[string]string) {
 	values = map[string]string{}
 	for _, row := range *rs.rawRows {
-		values[string(row[keyColumn].([]byte))] = string(row[valueColumn].([]byte))
+		values[string(row[keyColumn])] = string(row[valueColumn])
 	}
 	return
 }
@@ -1050,4 +1103,9 @@ func (rs *ResultSet) mapToStruct(mapData map[string]string, Struct interface{}) 
 		}
 	}
 	return rv.Interface(), err
+}
+
+type Cache interface {
+	Set(key string, val []byte, expire uint) (err error)
+	Get(key string) (data []byte, err error)
 }
