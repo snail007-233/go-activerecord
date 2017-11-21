@@ -93,13 +93,15 @@ func (db *DB) init(config DBConfig) (err error) {
 }
 
 func (db *DB) getDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%dms&charset=%s&collation=%s",
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%dms&readTimeout=%dms&writeTimeout=%dms&charset=%s&collation=%s",
 		url.QueryEscape(db.Config.Username),
 		url.QueryEscape(db.Config.Password),
 		url.QueryEscape(db.Config.Host),
 		db.Config.Port,
 		url.QueryEscape(db.Config.Database),
 		db.Config.Timeout,
+	        db.Config.ReadTimeout,
+	        db.Config.WriteTimeout,
 		url.QueryEscape(db.Config.Charset),
 		url.QueryEscape(db.Config.Collate))
 }
@@ -241,6 +243,8 @@ type DBConfig struct {
 	TablePrefix              string
 	TablePrefixSqlIdentifier string
 	Timeout                  int
+	ReadTimeout              int
+	WriteTimeout             int
 	SetMaxIdleConns          int
 	SetMaxOpenConns          int
 	Cache                    Cache
@@ -267,6 +271,8 @@ func NewDBConfig() DBConfig {
 		TablePrefix:              "",
 		TablePrefixSqlIdentifier: "",
 		Timeout:                  3000,
+		ReadTimeout:              5000,
+		WriteTimeout:             5000,
 		SetMaxOpenConns:          500,
 		SetMaxIdleConns:          50,
 	}
