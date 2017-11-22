@@ -100,8 +100,8 @@ func (db *DB) getDSN() string {
 		db.Config.Port,
 		url.QueryEscape(db.Config.Database),
 		db.Config.Timeout,
-	        db.Config.ReadTimeout,
-	        db.Config.WriteTimeout,
+		db.Config.ReadTimeout,
+		db.Config.WriteTimeout,
 		url.QueryEscape(db.Config.Charset),
 		url.QueryEscape(db.Config.Collate))
 }
