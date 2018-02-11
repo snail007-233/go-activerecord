@@ -95,7 +95,7 @@ func (db *DB) init(config DBConfig) (err error) {
 func (db *DB) getDSN() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?timeout=%dms&readTimeout=%dms&writeTimeout=%dms&charset=%s&collation=%s",
 		url.QueryEscape(db.Config.Username),
-		url.QueryEscape(db.Config.Password),
+		db.Config.Password,
 		url.QueryEscape(db.Config.Host),
 		db.Config.Port,
 		url.QueryEscape(db.Config.Database),
