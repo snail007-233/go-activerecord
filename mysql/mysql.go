@@ -134,6 +134,7 @@ func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
 	if err != nil {
 		return
 	}
+	defer stmt.Close()
 	result, err = stmt.Exec(ar.values...)
 	if err != nil {
 		return
@@ -154,6 +155,7 @@ func (db *DB) Exec(ar *ActiveRecord) (rs *ResultSet, err error) {
 	if err != nil {
 		return
 	}
+	defer stmt.Close()
 	result, err = stmt.Exec(ar.values...)
 	if err != nil {
 		return
@@ -185,6 +187,7 @@ func (db *DB) Query(ar *ActiveRecord) (rs *ResultSet, err error) {
 		if err != nil {
 			return
 		}
+		defer stmt.Close()
 		var rows *sql.Rows
 		rows, err = stmt.Query(ar.values...)
 		if err != nil {
