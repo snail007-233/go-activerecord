@@ -118,7 +118,12 @@ func (db *DB) Begin(config DBConfig) (tx *sql.Tx, err error) {
 	return db.ConnPool.Begin()
 }
 func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
-	sqlStr := ar.SQL()
+	return db.execSQLTx(ar.SQL(), len(ar.arInsertBatch), tx, ar.values...)
+}
+func (db *DB) ExecSQLTx(tx *sql.Tx, sqlStr string, values ...interface{}) (rs *ResultSet, err error) {
+	return db.execSQLTx(sqlStr, 0, tx, values...)
+}
+func (db *DB) execSQLTx(sqlStr string, arInsertBatchCnt int, tx *sql.Tx, values ...interface{}) (rs *ResultSet, err error) {
 	var stmt *sql.Stmt
 	var result sql.Result
 	rs = new(ResultSet)
@@ -127,7 +132,7 @@ func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
 		return
 	}
 	defer stmt.Close()
-	result, err = stmt.Exec(ar.values...)
+	result, err = stmt.Exec(values...)
 	if err != nil {
 		return
 	}
@@ -136,7 +141,7 @@ func (db *DB) ExecTx(ar *ActiveRecord, tx *sql.Tx) (rs *ResultSet, err error) {
 	if err != nil {
 		return
 	}
-	l := int64(len(ar.arInsertBatch))
+	l := int64(arInsertBatchCnt)
 	if l > 1 {
 		rs.LastInsertId = rs.LastInsertId - +1
 		rs.RowsAffected = l
